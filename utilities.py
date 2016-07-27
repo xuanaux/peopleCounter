@@ -24,10 +24,22 @@ def bigblobKmeans(frame, fgmask, n_clusters):
     return centroidList
 
 
-def bigblobHorizontal(fgmask,validTrackUpperBound , validTrackLowerBound):
+def getBlobRatio(blobmask, validTrackUpperBound, validTrackLowerBound):
     """estimate number of people passing just by horizontal foreground pixel ratio"""
-    fgratio = np.dot(np.sum(fgmask[validTrackUpperBound: validTrackLowerBound,:]!=0,1), 1.0/fgmask.shape[1])
-    return fgratio
+    """get ratio for EACH blob"""    
+    horizRatio = np.dot(np.sum(blobmask[validTrackUpperBound: validTrackLowerBound,:]!=0,1), 1.0/blobmask.shape[1])
+    peak = np.max(horizRatio)
+    if peak>0.1:
+        peakLoc = np.where(horizRatio==peak)[0]
+        peakLoc = np.sum(peakLoc)/len(peakLoc)
+    else:
+        peakLoc = None
+    return (peak, peakLoc)
+
+
+
+
+
 
 
 
@@ -80,8 +92,6 @@ def checkBlobSize(fgmask):
     upperH,lowerH  = output_height/4, 3*output_height/4
     # upperH,lowerH = 2*output_height/5, 3*output_height/5    
     return (np.sum(fgmask[0:upperH,:]!=0),  np.sum(fgmask[upperH:output_height/2,:]!=0), np.sum(fgmask[output_height/2:lowerH,:]!=0),np.sum(fgmask[lowerH:output_height,:]!=0) )
-
-
 
 def fitCenters(centerList,dist, peopleCount):
     """fit a piece-linear line to stored centers"""
