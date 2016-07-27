@@ -36,7 +36,13 @@ class Track(object):
         self.activeCount += 1
 
     def predictCenter(self):
-        return self.centerList[-1]
+        # return self.centerList[-1]
+        if len(self.centerList)==1:
+            return self.centerList[-1]
+        elif len(self.centerList)==2:
+            return np.dot([0.4,0.6],(self.centerList[-2:]))
+        else:
+            return np.dot([0.1,0.4,0.5],(self.centerList[-3:]))
 
     def plot(self, img):
         for i in reversed(xrange(len(self.centerList) - 1)):
@@ -66,12 +72,11 @@ class Track(object):
         self.counted = True
 
 class Tracking(object):
-    def __init__(self, countUpperBound, countLowerBound, validTrackUpperBound, validTrackLowerBound, peopleBlobSize):
+    def __init__(self, countUpperBound, countLowerBound, validTrackUpperBound, validTrackLowerBound):
         self.countUpperBound = countUpperBound
         self.countLowerBound = countLowerBound
         self.validTrackUpperBound = validTrackUpperBound
         self.validTrackLowerBound = validTrackLowerBound
-        self.peopleBlobSize = peopleBlobSize
         self.counter = 0
 
 
@@ -101,7 +106,7 @@ class Tracking(object):
                     closestTrack = track
 
             if minDist < distThreshold and trackMark[minIdxTrack] == 0:
-                # print minDist
+                print minDist
                 closestTrack.updateTrack(blob)
                 trackMark[minIdxTrack] = 1
                 blobMark[idxBlob] = 1
@@ -131,22 +136,20 @@ class Tracking(object):
                 if track.inactiveCount >= inactiveThreshold:
                     trackMark[idxTrack] = 2
             # if track has passed detection region, increment up/down counter, then inactivate track
-            else:
-                if track.direction == -1 and track.centerList[-1][1] > self.countLowerBound:
-                    nDown += max(1, int((track.maxx - track.minx) / self.peopleBlobSize + 0.5))
-                    track.direction = 1
-                    # track.counted = True
-                elif track.direction == 1 and track.centerList[-1][1] < self.countUpperBound:
-                    nUp += max(1, int((track.maxx - track.minx) / self.peopleBlobSize + 0.5))
-                    track.direction = -1
-                    # track.counted = True
             # elif not track.counted:
-            #     if (np.min(np.array(track.centerList)[:,1])<= self.validTrackUpperBound) and (np.max(np.array(track.centerList)[:,1])>=self.validTrackLowerBound):
-            #         track.fitTracklet(self.validTrackUpperBound,self.validTrackLowerBound)
-            #         if track.generalDirection==1:
-            #             nDown += 1
-            #         elif track.generalDirection==2:
-            #             nUp += 1
+            #     if track.direction == -1 and track.centerList[-1][1] > self.countLowerBound:
+            #         nDown += 1
+            #         track.counted = True
+            #     elif track.direction == 1 and track.centerList[-1][1] < self.countUpperBound:
+            #         nUp += 1
+            #         track.counted = True
+            elif not track.counted:
+                if (np.min(np.array(track.centerList)[:,1])<= self.validTrackUpperBound) and (np.max(np.array(track.centerList)[:,1])>=self.validTrackLowerBound):
+                    track.fitTracklet(self.validTrackUpperBound,self.validTrackLowerBound)
+                    if track.generalDirection==1:
+                        nDown += 1
+                    elif track.generalDirection==2:
+                        nUp += 1
 
         tracks = [tracks[i] for i in range(len(tracks)) if trackMark[i] <= 1]
         # append new tracks to track list
@@ -168,3 +171,4 @@ class Tracking(object):
             return 1
         else:
             return 0
+
